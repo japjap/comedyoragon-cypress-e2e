@@ -1,32 +1,36 @@
 import { BasePage } from "./BasePage";
 
 /**
- * GUESS: the route is /contact and the form uses <label>s that match these
- * names. Testing Library's findByLabelText needs the label to be linked to
- * the input (htmlFor/id or wrapping), so verify each field.
- * TODO: add data-testid="contact-form" to the <form>.
+ * The /contact page has no form. It shows a "Contact" heading and a
+ * "Contact details" card with an email, a location and a Website link.
+ * TODO: add data-testid="contact-details" to the card.
  */
 export class ContactPage extends BasePage {
   readonly path = "/contact";
 
-  form() {
-    return cy.get("main form").first();
+  pageHeading() {
+    return cy.findByRole("heading", { level: 1, name: /^contact$/i });
   }
 
-  nameInput() {
-    return this.form().findByLabelText(/name/i);
+  detailsHeading() {
+    return cy.findByRole("heading", { name: /^contact details$/i });
   }
 
-  emailInput() {
-    return this.form().findByLabelText(/email/i);
+  /** The nearest element around the heading that also holds the email link. */
+  detailsCard() {
+    return this.detailsHeading()
+      .parents()
+      .filter(':has(a[href^="mailto:"])')
+      .first();
   }
 
-  messageInput() {
-    return this.form().findByLabelText(/message/i);
+  /** GUESS: the email is a mailto: link. */
+  emailLink() {
+    return this.detailsCard().find('a[href^="mailto:"]');
   }
 
-  submitButton() {
-    return this.form().findByRole("button", { name: /send|submit/i });
+  websiteLink() {
+    return this.detailsCard().findByRole("link", { name: /website/i });
   }
 }
 
