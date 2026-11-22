@@ -54,6 +54,23 @@ export class BookingPage extends BasePage {
     super.visit();
     cy.document().its("readyState").should("eq", "complete");
     this.field(this.labels.eventType).should("be.visible").and("be.enabled");
+    this.waitForHydration();
+  }
+
+  /**
+   * React marks the elements it controls with "__reactFiber..." keys once the
+   * page has hydrated. Until then the form has no submit handler, and a click
+   * on submit does a plain browser GET instead of the app's request.
+   *
+   * If this fails only in Jenkins, the page's JavaScript is not loading from
+   * http://host.docker.internal:3000. Next.js dev blocks dev resources for
+   * hosts that are not in `allowedDevOrigins` in next.config.
+   */
+  waitForHydration() {
+    this.field(this.labels.eventType).should(($el) => {
+      const hydrated = Object.keys($el[0]).some((k) => k.startsWith("__reactFiber"));
+      expect(hydrated, "React hydrated the booking form").to.eq(true);
+    });
   }
 
   form() {
@@ -124,6 +141,9 @@ export class BookingPage extends BasePage {
 
   submit() {
     this.submitButton().scrollIntoView().should("be.visible").and("be.enabled").click();
+    // A query string here means the browser did a plain GET submit, so the
+    // app's own handler never ran (the page wasn't hydrated).
+    cy.location("search").should("eq", "");
   }
 }
 
