@@ -17,7 +17,11 @@ Cypress.Commands.add("fillBookingForm", (details: BookingDetails) => {
  * same origin. TODO: narrow this to the real endpoint once known.
  */
 Cypress.Commands.add("stubFormSubmissions", () => {
-  cy.intercept({ method: "POST", url: "**" }, { statusCode: 200, body: { ok: true } }).as("formPost");
+  cy.intercept({ method: "POST", url: "**" }, (req) => {
+    // Shows each stubbed POST in the command log and the run's screenshots.
+    Cypress.log({ name: "formPost", message: `${req.method} ${req.url}` });
+    req.reply({ statusCode: 200, body: { ok: true } });
+  }).as("formPost");
 });
 
 declare global {

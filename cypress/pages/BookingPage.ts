@@ -45,6 +45,34 @@ export class BookingPage extends BasePage {
     aboutEvent: /^\s*tell us about your event\b/i,
   };
 
+  /**
+   * Waits for the page to finish loading before the test types anything.
+   * On a slow machine (like Jenkins) React can hydrate after Cypress has
+   * started typing and wipe the values, which then blocks the submit.
+   */
+  visit() {
+    super.visit();
+    cy.document().its("readyState").should("eq", "complete");
+    this.field(this.labels.eventType).should("be.visible").and("be.enabled");
+    this.waitForHydration();
+  }
+
+  /**
+   * React marks the elements it controls with "__reactFiber..." keys once the
+   * page has hydrated. Until then the form has no submit handler, and a click
+   * on submit does a plain browser GET instead of the app's request.
+   *
+   * If this fails only in Jenkins, the page's JavaScript is not loading from
+   * http://host.docker.internal:3000. Next.js dev blocks dev resources for
+   * hosts that are not in `allowedDevOrigins` in next.config.
+   */
+  waitForHydration() {
+    this.field(this.labels.eventType).should(($el) => {
+      const hydrated = Object.keys($el[0]).some((k) => k.startsWith("__reactFiber"));
+      expect(hydrated, "React hydrated the booking form").to.eq(true);
+    });
+  }
+
   form() {
     return cy.get("main form");
   }
@@ -72,7 +100,28 @@ export class BookingPage extends BasePage {
 
   private typeInto(label: RegExp, value?: string) {
     if (value === undefined || value === "") return;
-    this.field(label).clear().type(value);
+    // The value check fails right here if the browser rejects the input
+    // (for example a date format) instead of later at submit time.
+    this.field(label).clear().type(value).should("have.value", value);
+  }
+
+  /**
+   * Fails with a readable list of invalid fields, so the screenshot from a
+   * failed run shows why the browser refused to submit the form.
+   */
+  assertNoInvalidFields() {
+    cy.get("main").should(($main) => {
+      const invalid = $main
+        .find("input, select, textarea")
+        .toArray()
+        .filter((el) => !(el as HTMLInputElement).checkValidity())
+        .map((el) => {
+          const input = el as HTMLInputElement;
+          const label = input.labels?.[0]?.textContent?.trim() || input.name || input.id;
+          return `${label}: "${input.value}" (${input.validationMessage})`;
+        });
+      expect(invalid, "invalid booking fields").to.deep.equal([]);
+    });
   }
 
   fill(d: BookingDetails) {
@@ -91,7 +140,10 @@ export class BookingPage extends BasePage {
   }
 
   submit() {
-    this.submitButton().click();
+    this.submitButton().scrollIntoView().should("be.visible").and("be.enabled").click();
+    // A query string here means the browser did a plain GET submit, so the
+    // app's own handler never ran (the page wasn't hydrated).
+    cy.location("search").should("eq", "");
   }
 }
 

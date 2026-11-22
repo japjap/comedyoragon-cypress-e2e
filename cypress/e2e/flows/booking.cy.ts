@@ -25,8 +25,10 @@ describe("Booking flow", () => {
     const { valid } = this.booking as BookingFixture;
     bookingPage.visit();
     cy.fillBookingForm(valid);
+    bookingPage.assertNoInvalidFields();
     bookingPage.submit();
-    cy.wait("@formPost");
+    // Server actions can be slow on a cold dev server, so allow more time.
+    cy.wait("@formPost", { timeout: 15000 });
     // TODO: assert the real success message once known, for example:
     // cy.findByText(/thanks|we'll be in touch/i).should("be.visible");
   });
