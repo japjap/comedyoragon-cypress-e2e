@@ -1,0 +1,18 @@
+{
+  "valid": {
+    "name": "Cypress Test",
+    "email": "cypress.test@example.com",
+    "phone": "0400000000",
+    "eventDate": "2027-06-12",
+    "eventType": "Corporate",
+    "message": "Automated test booking, please ignore."
+  },
+  "invalidEmail": {
+    "name": "Cypress Test",
+    "email": "not-an-email",
+    "phone": "0400000000",
+    "eventDate": "2027-06-12",
+    "eventType": "Corporate",
+    "message": "Automated test booking, please ignore."
+  }
+}

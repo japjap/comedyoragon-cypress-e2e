@@ -1,37 +1,32 @@
 /// <reference types="cypress" />
-// ***********************************************
-// This example commands.ts shows you how to
-// create various custom commands and overwrite
-// existing commands.
-//
-// For more comprehensive examples of custom
-// commands please read more here:
-// https://on.cypress.io/custom-commands
-// ***********************************************
-//
-//
-// -- This is a parent command --
-// Cypress.Commands.add('login', (email, password) => { ... })
-//
-//
-// -- This is a child command --
-// Cypress.Commands.add('drag', { prevSubject: 'element'}, (subject, options) => { ... })
-//
-//
-// -- This is a dual command --
-// Cypress.Commands.add('dismiss', { prevSubject: 'optional'}, (subject, options) => { ... })
-//
-//
-// -- This will overwrite an existing command --
-// Cypress.Commands.overwrite('visit', (originalFn, url, options) => { ... })
-//
-// declare global {
-//   namespace Cypress {
-//     interface Chainable {
-//       login(email: string, password: string): Chainable<void>
-//       drag(subject: string, options?: Partial<TypeOptions>): Chainable<Element>
-//       dismiss(subject: string, options?: Partial<TypeOptions>): Chainable<Element>
-//       visit(originalFn: CommandOriginalFn, url: string, options: Partial<VisitOptions>): Chainable<Element>
-//     }
-//   }
-// }
+// Adds cy.findByRole, cy.findByLabelText, cy.findByText and friends.
+import "@testing-library/cypress/add-commands";
+import { bookingPage, type BookingDetails } from "../pages/BookingPage";
+
+/**
+ * Cross-cutting actions live here as custom commands.
+ * Page-specific actions belong in the page objects under cypress/pages.
+ */
+Cypress.Commands.add("fillBookingForm", (details: BookingDetails) => {
+  bookingPage.fill(details);
+});
+
+/**
+ * Stubs every POST so a test never sends a real booking or email.
+ * GUESS: the form posts to an API route or a Next.js server action on the
+ * same origin. TODO: narrow this to the real endpoint once known.
+ */
+Cypress.Commands.add("stubFormSubmissions", () => {
+  cy.intercept({ method: "POST", url: "**" }, { statusCode: 200, body: { ok: true } }).as("formPost");
+});
+
+declare global {
+  namespace Cypress {
+    interface Chainable {
+      fillBookingForm(details: BookingDetails): Chainable<void>;
+      stubFormSubmissions(): Chainable<void>;
+    }
+  }
+}
+
+export {};
