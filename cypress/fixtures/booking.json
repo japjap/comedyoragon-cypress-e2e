@@ -2,17 +2,22 @@
   "valid": {
     "name": "Cypress Test",
     "email": "cypress.test@example.com",
-    "phone": "0400000000",
-    "eventDate": "2027-06-12",
-    "eventType": "Corporate",
-    "message": "Automated test booking, please ignore."
+    "phone": "09170000000",
+    "eventType": "corporate",
+    "date": "2027-06-12",
+    "startTime": "19:00",
+    "endTime": "21:00",
+    "venueOrCity": "Makati City",
+    "venueAddress": "123 Test Street",
+    "expectedGuests": "120",
+    "aboutEvent": "Automated test booking, please ignore."
   },
   "invalidEmail": {
     "name": "Cypress Test",
     "email": "not-an-email",
-    "phone": "0400000000",
-    "eventDate": "2027-06-12",
-    "eventType": "Corporate",
-    "message": "Automated test booking, please ignore."
+    "eventType": "corporate",
+    "date": "2027-06-12",
+    "startTime": "19:00",
+    "venueOrCity": "Makati City"
   }
 }

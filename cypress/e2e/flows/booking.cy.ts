@@ -5,6 +5,9 @@ interface BookingFixture {
   invalidEmail: BookingDetails;
 }
 
+const isInvalid = ($el: JQuery<HTMLElement>) =>
+  !($el[0] as HTMLInputElement | HTMLSelectElement).checkValidity();
+
 describe("Booking flow", () => {
   beforeEach(() => {
     cy.stubFormSubmissions();
@@ -14,7 +17,8 @@ describe("Booking flow", () => {
   it("opens the booking form from Book Us", () => {
     homePage.visit();
     homePage.nav.bookUsButton().click();
-    bookingPage.form().should("be.visible");
+    cy.location("pathname").should("eq", bookingPage.path);
+    bookingPage.field(bookingPage.labels.eventType).should("be.visible");
   });
 
   it("submits a valid booking", function () {
@@ -33,8 +37,19 @@ describe("Booking flow", () => {
     cy.fillBookingForm(invalidEmail);
     bookingPage.submit();
     // Relies on native <input type="email"> validation.
-    bookingPage.field(/email/i).then(($input) => {
-      expect(($input[0] as HTMLInputElement).checkValidity()).to.eq(false);
+    bookingPage.field(bookingPage.labels.email).then(($el) => {
+      expect(isInvalid($el), "email is invalid").to.eq(true);
+    });
+  });
+
+  it("requires the event details", () => {
+    bookingPage.visit();
+    bookingPage.submit();
+    const { eventType, date, startTime, venueOrCity } = bookingPage.labels;
+    [eventType, date, startTime, venueOrCity].forEach((label) => {
+      bookingPage.field(label).then(($el) => {
+        expect(isInvalid($el), `${label} is required`).to.eq(true);
+      });
     });
   });
 });
