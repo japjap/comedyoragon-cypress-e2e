@@ -45,6 +45,17 @@ export class BookingPage extends BasePage {
     aboutEvent: /^\s*tell us about your event\b/i,
   };
 
+  /**
+   * Waits for the page to finish loading before the test types anything.
+   * On a slow machine (like Jenkins) React can hydrate after Cypress has
+   * started typing and wipe the values, which then blocks the submit.
+   */
+  visit() {
+    super.visit();
+    cy.document().its("readyState").should("eq", "complete");
+    this.field(this.labels.eventType).should("be.visible").and("be.enabled");
+  }
+
   form() {
     return cy.get("main form");
   }
@@ -72,7 +83,28 @@ export class BookingPage extends BasePage {
 
   private typeInto(label: RegExp, value?: string) {
     if (value === undefined || value === "") return;
-    this.field(label).clear().type(value);
+    // The value check fails right here if the browser rejects the input
+    // (for example a date format) instead of later at submit time.
+    this.field(label).clear().type(value).should("have.value", value);
+  }
+
+  /**
+   * Fails with a readable list of invalid fields, so the screenshot from a
+   * failed run shows why the browser refused to submit the form.
+   */
+  assertNoInvalidFields() {
+    cy.get("main").should(($main) => {
+      const invalid = $main
+        .find("input, select, textarea")
+        .toArray()
+        .filter((el) => !(el as HTMLInputElement).checkValidity())
+        .map((el) => {
+          const input = el as HTMLInputElement;
+          const label = input.labels?.[0]?.textContent?.trim() || input.name || input.id;
+          return `${label}: "${input.value}" (${input.validationMessage})`;
+        });
+      expect(invalid, "invalid booking fields").to.deep.equal([]);
+    });
   }
 
   fill(d: BookingDetails) {
@@ -91,7 +123,7 @@ export class BookingPage extends BasePage {
   }
 
   submit() {
-    this.submitButton().click();
+    this.submitButton().scrollIntoView().should("be.visible").and("be.enabled").click();
   }
 }
 
